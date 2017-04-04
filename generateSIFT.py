@@ -13,6 +13,7 @@ import numpy as np
 import scipy.io as sio
 import scipy.signal as ss
 import scipy.ndimage as sn
+import matplotlib.pyplot as plt
 
 
 def get_patch(img, x, y, patch_radius):
@@ -105,6 +106,33 @@ def gaussian_gradients(img, sigma=1.0):
     return grad_x, grad_y
 
 
+def plot_gradients(img, grad_x, grad_y):
+    ''' PLOT_GRADIENT
+
+        Plot gradient arrows on original image.
+
+        Input arguments:
+
+        - img : original image
+        - grad_x : gradient in X direction
+        - grad_y : gradient in Y direction
+
+    '''
+
+    X, Y = np.meshgrid(np.arange(0, 7), np.arange(0, 7))
+    U = grad_x
+    V = grad_y
+
+    plt.figure()
+    plt.imshow(img, cmap='gray')
+    plt.quiver(X, Y, U, -V, facecolor='red')
+    plt.axis('image')
+    plt.axis('off')
+    plt.show()
+
+    return
+
+
 def gradient_histogram(grad_x, grad_y):
     ''' GRADIENT_HISTOGRAM
 
@@ -162,6 +190,36 @@ def gradient_histogram(grad_x, grad_y):
     return histogram
 
 
+def plot_bouqute(histogram):
+    ''' PLOT_BOUQUTE
+
+        Plot gradient histogram as a bouqute.
+
+        Input argement:
+
+        - histogram : the gradient histogram of an image
+
+    '''
+
+    angles = np.pi / 8 + np.arange(0, 8) * np.pi / 4
+    max_val = 0.1
+
+    plt.figure()
+
+    for i in range(8):
+        vec = histogram[i] * [np.cos(angles[i]), np.sin(angles[i])]
+        plt.quiver(0, 0, vec[0], -vec[1], scale=1, units='y', facecolor='r')
+        max_val = np.maximum(max_val, np.max(np.abs(vec)))
+
+    plt.plot([-max_val, max_val], [0, 0], 'k:')
+    plt.plot([0, 0], [-max_val, max_val], 'k:')
+
+    plt.axis('off')
+    plt.show()
+
+    return
+
+
 def read_data(path):
     ''' READ_DATA
 
@@ -185,9 +243,83 @@ def read_data(path):
     train_set = data['digits_training']
     validate_set = data['digits_validation']
 
-    # Visit first image
-    # print(validate_set[0, 0][0])
-    # Visit first label
-    # print(validate_set[0, 0][1])
+    # Visit ith image
+    # print(validate_set[0, i - 1][0])
+    # Visit ith label
+    # print(validate_set[0, i - 1][1])
 
     return train_set, validate_set
+
+
+def place_regions(position, scale):
+    ''' PLACE_REGION
+
+        Return center's position and radius of each small square of a
+        patch. Center's position indicates the coordinate of each small
+        square in the full scale image.
+
+        Input arguments:
+        - position : position of the patch's center in full scale image
+        - scale  : the size of the patch
+
+        Outputs:
+        - centres : 2 x 9 matrix records nine centers of 9 small squares
+        - radius  : a number show the radius of each small square
+
+        Input arguments and outputs could be shown as below
+
+        |<---- scale ---->|
+        |-----|-----|-----|----|--> radius
+        |  *  |  *  |  *  |----|
+        |-----|-----|-----|         X : position
+        |  *  |  X  |  *  |
+        |-----|-----|-----|         * & X : centres
+        |  *  |  *  |  *  |
+        |-----|-----|-----|
+
+    '''
+
+    # Calculate radius for each small square
+    # (scale - 3) : since the center is not a part of radius, each row
+    # and each column of patch consists of 6 radius and 3 centers
+    # using function floor() is trying to ensure that the edge of image
+    # will not be exceeded in the follwing operation
+    radius = np.floor((scale - 3) / 6)
+
+    # Set the relative center position, the relative center is
+    # the centre of the patch, not in the full scale image
+    c = 3 * radius + 1
+    rc = np.array([[c, c]])
+
+    # Set three numbers that can form all nine centers' position
+    # all centers (except the midpoint) converge 1 pixel to the
+    # midpoint toprepare for the overlap
+    c_pos = np.array([c - 2 * radius, c, c + 2 * radius]) - 1
+    x, y = np.meshgrid(c_pos, c_pos)
+
+    # Calculate the distance between each center of samll squrae
+    # and therelative center of the patch
+    dis = np.array([y.flatten(), x.flatten()]) - rc.T
+    # Calculate the real position of each small square in full scale image
+    centres = dis + np.array([position]).T
+
+    # Now, radius pluses 1 that achives 2-pixel overlap
+    radius += 1
+
+    return centres, radius
+
+
+def plot_grides(train_img, position, scale):
+    centres, radius = place_regions(position, scale)
+
+    nbr_squares = centres.shape[1]
+
+    plt.imshow(train_img, cmap='gray')
+
+    for i in range(nbr_squares):
+        cols = centres[0, i] + radius * np.array([-1, 1, 1, -1, -1])
+        rows = centres[1, i] + radius * np.array([-1, -1, 1, 1, -1])
+        plt.plot(cols, rows, 'r-')
+
+    plt.axis('off')
+    plt.show()

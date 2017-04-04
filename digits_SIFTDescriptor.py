@@ -13,9 +13,13 @@ import numpy as np
 import generateSIFT as gs
 import matplotlib.pyplot as plt
 
+# -------------------------------------------------
+# Stage 1: Test some functions using a simple case
+# -------------------------------------------------
 
 # Generate a simple image to test
 simple_test_img = np.arange(start=11, stop=101).reshape([9, 10]).T
+# simple_test_img = np.random.normal(size=[9, 10]).T
 
 # Get a patch from test image
 test_patch = gs.get_patch(simple_test_img, 5, 5, 3)
@@ -28,20 +32,36 @@ test_patch_filt = gs.gaussian_filter(test_patch, sigma)
 patch_grad_x, patch_grad_y = gs.gaussian_gradients(test_patch, sigma)
 
 # Plot gradients on test patch
-# X, Y = np.meshgrid(np.arange(0, 7), np.arange(0, 7))
-# U = patch_grad_x
-# V = patch_grad_y
-
-# plt.figure()
-# plt.imshow(test_patch, cmap='gray')
-# plt.quiver(X, Y, U, -V, facecolor='red')
-# plt.axis('off')
-# plt.show()
+# gs.plot_gradients(test_patch, patch_grad_x, patch_grad_y)
 
 # Compute the gradient histogram of test patch
 histogram = gs.gradient_histogram(patch_grad_x, patch_grad_y)
+
+# Plot bouqute of gradients histogram
+# gs.plot_bouqute(histogram)
+
+# -------------------------------------------------------------
+# Stage 2: Test some functions using one image which has digit
+# -------------------------------------------------------------
 
 # The image set in digits,mat has 100 training images and
 # 50 validation images, all images are in grayscale and lack of
 # SIFT descriptors, the scale of each image is 39 by 39
 train_set, validate_set = gs.read_data('Data/digits.mat')
+
+# Set the index of an image in training set, this image is used
+# int next few steps, the range of idx is from 1 to 100
+idx = 27
+
+# Extract the image from training set
+train_img = train_set[0, idx - 1][0]
+# print(train_set[0, idx][1])
+
+# Set the position of the train image's centre
+# Set the scale of the intersted patch that needs to be processed
+# in this case, the entire training image is interested patch
+position = [20, 20]
+scale = 39
+
+# Plot nine grids on training image
+gs.plot_grides(train_img, position, scale)
