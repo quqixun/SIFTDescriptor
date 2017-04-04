@@ -60,8 +60,13 @@ train_img = train_set[0, idx - 1][0]
 # Set the position of the train image's centre
 # Set the scale of the intersted patch that needs to be processed
 # in this case, the entire training image is interested patch
-position = [20, 20]
 scale = 39
+position = np.array([[20, 20]])
+obj_pos = np.array([[position, scale]])
 
 # Plot nine grids on training image
-gs.plot_grides(train_img, position, scale)
+# gs.plot_grides(train_img, obj_pos)
+
+# Calculate the descriptor of this training image
+desc = gs.gradient_descriptor(train_img, obj_pos)
+# print(desc)

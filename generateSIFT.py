@@ -301,25 +301,91 @@ def place_regions(position, scale):
     # and therelative center of the patch
     dis = np.array([y.flatten(), x.flatten()]) - rc.T
     # Calculate the real position of each small square in full scale image
-    centres = dis + np.array([position]).T
+    centres = dis + position.T
 
     # Now, radius pluses 1 that achives 2-pixel overlap
     radius += 1
 
-    return centres, radius
+    return np.int32(centres), np.int32(radius)
 
 
-def plot_grides(train_img, position, scale):
-    centres, radius = place_regions(position, scale)
+def plot_grides(img, obj_pos):
+    ''' PLOT_GRIDES
 
-    nbr_squares = centres.shape[1]
+        Plot nine small squares in full scale image.
 
-    plt.imshow(train_img, cmap='gray')
+        Input arguments:
 
-    for i in range(nbr_squares):
-        cols = centres[0, i] + radius * np.array([-1, 1, 1, -1, -1])
-        rows = centres[1, i] + radius * np.array([-1, -1, 1, 1, -1])
-        plt.plot(cols, rows, 'r-')
+        - img : the full scale image that will be plotted nine squares in
+        - obj_pos : a n x 3 matrix, first two columns store the position of the
+          patch's center, the third column stores the scale of the patch
 
-    plt.axis('off')
-    plt.show()
+    '''
+
+    # Generate a new figure, plot the full scale image first
+    plt.imshow(img, cmap='gray')
+
+    # Obtain the number of patches, all patches are about to be segmented in
+    # nine samll squares and also be plotted in full scale image
+    for i in range(obj_pos.shape[0]):
+        # For each patch, calculate the nine centers of samll squares and the
+        # radius as well, plotting all nine squares in full scale image
+        centres, radius = place_regions(obj_pos[i, 0], obj_pos[i, 1])
+
+        for j in range(centres.shape[1]):
+            cols = centres[0, j] + radius * np.array([-1, 1, 1, -1, -1])
+            rows = centres[1, j] + radius * np.array([-1, -1, 1, 1, -1])
+            plt.plot(cols, rows, 'r-')
+
+        plt.axis('off')
+        plt.show()
+
+    return
+
+
+def gradient_descriptor(img, obj_pos):
+    ''' GRADIENT_DESCRIPTOR
+
+        Return the SIFT_like descriptor of a patch in image.
+
+        Input arguments:
+
+        - img : a full scale image that contains the patch
+        - obj_pos : a n x 3 matrix, first two columns store the position of the
+          patch's center, the third column stores the scale of the patch
+
+        Output:
+
+        - desc : 72 x 1 vector indicates the SIFT-like descriptor of the patch
+
+    '''
+
+    # Standard deviation is propotional to the scale of patch
+    stddev = np.round(obj_pos[0, 1] * 0.1)
+
+    # Calculate the gradients in x and y direction
+    igx, igy = gaussian_gradients(img, stddev)
+
+    # The patch is about to be devided into nine samll squares,
+    # according to the position and the scale of patch, compute
+    # nine centers and one radius for all small squares
+    centres, radius = place_regions(obj_pos[0, 0], obj_pos[0, 1])
+
+    # Initialize a vector to store descriptor
+    # each small square has 8 descriptors, all
+    # nine small squares give 72 descriptors
+    desc = np.zeros([72, 1])
+    for i in range(9):
+        # Obtain X gradient and Y gradient for the ith small squares
+        pgx = get_patch(igx, centres[0, i], centres[1, i], radius - 1)
+        pgy = get_patch(igy, centres[0, i], centres[1, i], radius - 1)
+
+        # Compute the descriptors for the ith small square
+        desc[i * 8: (i + 1) * 8] = gradient_histogram(pgx, pgy)
+
+        # gs.plot_bouqute(desc[i * 8: (i + 1) * 8])
+
+    # Normalized all values in descriptor
+    desc /= np.max(desc)
+
+    return desc
