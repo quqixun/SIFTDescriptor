@@ -10,7 +10,7 @@
 
 
 import numpy as np
-import generateSIFT as gs
+import generate_SIFT as gs
 import matplotlib.pyplot as plt
 
 # -------------------------------------------------
