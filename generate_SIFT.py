@@ -3,10 +3,10 @@
 # 2017/04/03
 #
 
-# This script provides a test on generating
-# SIFT descriptors on images which consist
-# of digits. This script and relative
-# functions are tested under Python 3.5.2.
+# This script provides functions for generating
+# SIFT descriptors on images which consist of
+# digits. This script and relative functions
+# are tested under Python 3.5.2.
 
 
 import numpy as np
@@ -14,6 +14,21 @@ import scipy.io as sio
 import scipy.signal as ss
 import scipy.ndimage as sn
 import matplotlib.pyplot as plt
+
+
+# Standard deviation scale to determin
+# the size of gaussian filter
+STD_SCALE = 0.05
+
+# The number of grids in one patch
+GRIDES_NUM = 9
+
+# The number of gradient group in one grid
+DESC_PER_GRID = 8
+
+# The number of all gradient descriptors
+# of one patch
+DESC_ALL_NUM = GRIDES_NUM * DESC_PER_GRID
 
 
 def get_patch(img, x, y, patch_radius):
@@ -119,7 +134,8 @@ def plot_gradients(img, grad_x, grad_y):
 
     '''
 
-    X, Y = np.meshgrid(np.arange(0, 7), np.arange(0, 7))
+    X, Y = np.meshgrid(np.arange(0, grad_x.shape[0]),
+                       np.arange(0, grad_x.shape[1]))
     U = grad_x
     V = grad_y
 
@@ -171,7 +187,7 @@ def gradient_histogram(grad_x, grad_y):
     all_length = np.sqrt(np.power(grad_x, 2) + np.power(grad_y, 2))
 
     # Initialize the vector to hold histogram
-    hist_num = 8
+    hist_num = DESC_PER_GRID
     histogram = np.zeros([hist_num, 1])
 
     # There are four iterations, in
@@ -201,12 +217,13 @@ def plot_bouqute(histogram):
 
     '''
 
-    angles = np.pi / 8 + np.arange(0, 8) * np.pi / 4
+    angles = np.pi / DESC_PER_GRID + \
+        np.arange(0, 8) * np.pi / (DESC_PER_GRID / 2)
     max_val = 0.1
 
     plt.figure()
 
-    for i in range(8):
+    for i in range(DESC_PER_GRID):
         vec = histogram[i] * [np.cos(angles[i]), np.sin(angles[i])]
         plt.quiver(0, 0, vec[0], -vec[1], scale=1, units='y', facecolor='r')
         max_val = np.maximum(max_val, np.max(np.abs(vec)))
@@ -248,7 +265,7 @@ def read_data(path):
     # Visit ith label
     # print(validate_set[0, i - 1][1])
 
-    return train_set, validate_set
+    return np.asanyarray(train_set), np.asanyarray(validate_set)
 
 
 def place_regions(position, scale):
@@ -361,7 +378,7 @@ def gradient_descriptor(img, obj_pos):
     '''
 
     # Standard deviation is propotional to the scale of patch
-    stddev = np.round(obj_pos[0, 1] * 0.1)
+    stddev = np.round(obj_pos[0, 1] * STD_SCALE)
 
     # Calculate the gradients in x and y direction
     igx, igy = gaussian_gradients(img, stddev)
@@ -374,14 +391,15 @@ def gradient_descriptor(img, obj_pos):
     # Initialize a vector to store descriptor
     # each small square has 8 descriptors, all
     # nine small squares give 72 descriptors
-    desc = np.zeros([72, 1])
-    for i in range(9):
+    desc = np.zeros([DESC_ALL_NUM, 1])
+    for i in range(GRIDES_NUM):
         # Obtain X gradient and Y gradient for the ith small squares
         pgx = get_patch(igx, centres[0, i], centres[1, i], radius - 1)
         pgy = get_patch(igy, centres[0, i], centres[1, i], radius - 1)
 
         # Compute the descriptors for the ith small square
-        desc[i * 8: (i + 1) * 8] = gradient_histogram(pgx, pgy)
+        desc[i * DESC_PER_GRID: (i + 1) * DESC_PER_GRID] = \
+            gradient_histogram(pgx, pgy)
 
         # gs.plot_bouqute(desc[i * 8: (i + 1) * 8])
 

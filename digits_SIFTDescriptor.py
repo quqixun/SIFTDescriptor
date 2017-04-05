@@ -11,7 +11,7 @@
 
 import numpy as np
 import generate_SIFT as gs
-import matplotlib.pyplot as plt
+import classify_SIFT as cs
 
 # -------------------------------------------------
 # Stage 1: Test some functions using a simple case
@@ -51,7 +51,7 @@ train_set, validate_set = gs.read_data('Data/digits.mat')
 
 # Set the index of an image in training set, this image is used
 # int next few steps, the range of idx is from 1 to 100
-idx = 27
+idx = 38
 
 # Extract the image from training set
 train_img = train_set[0, idx - 1][0]
@@ -69,4 +69,22 @@ obj_pos = np.array([[position, scale]])
 
 # Calculate the descriptor of this training image
 desc = gs.gradient_descriptor(train_img, obj_pos)
-# print(desc)
+
+# ----------------------------------------------
+# Stage 3: Classification all validation images
+# ----------------------------------------------
+
+# Compute descriptors for all training images
+train_set_desc, train_labels = cs.prepare_digits(train_set, obj_pos)
+# print(train_labels)
+
+# Validate one digit image, get the label for this image
+# and display classification result
+label = cs.classify_digit(validate_set[0, idx - 1][0],
+                          train_set_desc, train_labels, obj_pos)
+print("Validate one digit - the NO.{} validation image".format(idx - 1))
+print("The label of this image is {}, it should be {}.\n".format(
+    label, train_labels[0, idx]))
+
+# Validate all images and show classification result
+cs.classify_all_digit(validate_set, train_set_desc, train_labels, obj_pos)
