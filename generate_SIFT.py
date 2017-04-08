@@ -404,6 +404,6 @@ def gradient_descriptor(img, obj_pos):
         # gs.plot_bouqute(desc[i * 8: (i + 1) * 8])
 
     # Normalized all values in descriptor
-    desc /= np.max(desc)
+    desc /= np.linalg.norm(desc)
 
     return desc

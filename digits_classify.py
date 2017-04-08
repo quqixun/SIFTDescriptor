@@ -55,7 +55,6 @@ idx = 38
 
 # Extract the image from training set
 train_img = train_set[0, idx - 1][0]
-# print(train_set[0, idx][1])
 
 # Set the position of the train image's centre
 # Set the scale of the intersted patch that needs to be processed
