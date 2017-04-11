@@ -43,7 +43,7 @@ def extract_SIFT(path):
 
         Input argument:
 
-        - path : the file path of iname to be processed
+        - path : the file path of image to be processed
 
         Out put:
 
